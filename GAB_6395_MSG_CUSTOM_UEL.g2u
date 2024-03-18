@@ -1,0 +1,68 @@
+﻿Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Hook 39900, message hook
+f.Intrinsic.Control.Try
+	f.ODBC.Connection!con.opencompanyconnection(90)
+	v.Local.sBody.Declare
+	v.Local.sCName.Declare
+	v.Local.sOperator.Declare
+	v.Local.sComment.Declare
+	v.Local.ssql.Declare
+	v.local.sret.Declare
+	v.Local.sSeq.Declare
+	v.Local.sSeqKey.Declare
+	V.Local.sSubject.Declare
+	v.Local.sSenderEmail.Declare
+	v.Local.sDate.Declare
+	v.Local.dDate.Declare
+	
+	v.Local.dDate.Set(v.Ambient.date)
+	'Need to do this so that the online update can process the transactions from the shop floor
+	F.Intrinsic.UI.Sleep(15)
+	'f.Intrinsic.Debug.ShowCallerInfo
+	f.Intrinsic.String.Format(v.local.dDate,"DDMMYY",v.Local.sDate)
+	f.Intrinsic.String.LPad(v.Passed.MSG-WO-SEQ,"0",6,v.Local.sSeq)
+	v.Local.sSenderEmail.Set("administrator@unitedmachinists.co.nz")
+	v.Local.sSubject.Set("Scrap Reported")
+	
+	f.Intrinsic.String.Build("SELECT NAME_CUSTOMER FROM V_CUSTOMER_MASTER WHERE CUSTOMER='{0}'",v.Passed.MSG-CUST,v.Local.ssql)
+	f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.sCName)
+	
+	f.Intrinsic.String.Concat("Customer Name: ",v.Local.sCName,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Work Order: ",v.Passed.MSG-WO,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Work Order Suffix: ",v.Passed.MSG-WO-SUFF,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Work Order Seq: ",v.Passed.MSG-WO-SEQ,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Part: ",v.Passed.MSG-GS-PART,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Build("select top 1 employee from JOB_DETAIL WHERE JOB='{0}' and suffix='{1}' and seq='{2}' and date_sequence='{3}' order by sequence_key desc",v.Passed.MSG-WO,v.Passed.MSG-WO-SUFF,v.Local.sSeq,v.Local.sDate,v.Local.ssql)
+	f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.sOperator)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Due Date: ",v.Passed.MSG-DUE-DATE,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Operator: ",v.local.sOperator,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Build("select top 1 sequence_key from JOB_DETAIL WHERE JOB='{0}' and suffix='{1}' and seq='{2}' and date_sequence='{3}' order by sequence_key desc",v.Passed.MSG-WO,v.Passed.MSG-WO-SUFF,V.local.sSeq,v.Local.sDate,v.Local.ssql)
+	f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.sSeqKey)
+	f.Intrinsic.String.Build("select TEXT from JOB_DTL_NOTES where job='{0}' and suffix='{1}' and job_seq='{2}' and seq='{3}'",v.Passed.MSG-WO,v.Passed.MSG-WO-SUFF,v.Local.sSeq,v.Local.sSeqKey,v.Local.ssql)
+	f.ODBC.Connection!con.ExecuteAndReturn(v.Local.ssql,v.Local.sComment)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Comment: ",v.local.sComment,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Good Parts: ",v.Passed.MSG-GOOD,v.Local.sBody)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Scrap Parts: ",v.Passed.MSG-SCRAP,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Scrap Perecent: ",v.Passed.MSG-SCRAP-PERCENT,v.Ambient.NewLine,v.Local.sBody)
+	f.Intrinsic.String.Concat(v.Local.sBody,"Workcenter: ",v.Passed.MSG-WORK-CENTER,v.Ambient.NewLine,v.Local.sBody)
+	
+	F.Global.Messaging.QueueMessage(V.Caller.CompanyCode,0,"",V.Local.sSubject,V.Local.sSenderEmail,"production@unitedmachinists.co.nz",v.Local.sBody,5,"",False,"","","","","","","","",False)
+	'f.Intrinsic.UI.Msgbox(v.Local.sBody)
+	
+	f.ODBC.Connection!con.Close
+	f.Intrinsic.Control.End
+	
+f.Intrinsic.Control.Catch
+	f.Intrinsic.UI.Msgbox(v.Ambient.ErrorDescription)
+	f.ODBC.Connection!con.Close
+	f.Intrinsic.Control.End
+f.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Comments.Start
+${$5$}$3.0.0.0$}$1
+${$6$}$Ryan$}$20210621080734552$}$zT7b+sV1eISPUtInNavz/nuzcK/R1TVIcjP3dchKkBSemhxC2LgyM7OvB9wTvH1p3pqdv5Wr5Kk=
+Program.Sub.Comments.End
